@@ -1,0 +1,49 @@
+{% extends "flask_template.html" %}
+{% block title %}Disk Image Access for the Web{% endblock %}
+{% block head %}
+    {{ super() }}
+    <style type="text/css">
+        .important { color: #336699; }
+        <style type="text/css">
+        h1.categories
+        {
+            color:red;
+            text-align:center;
+        }
+        h1 {
+            color:black;
+            text-align:center;
+        }
+        body {
+            color:black;
+            background-color: white;
+            margin-left: 5%;
+            margin-right: 5%;
+            border: 0px dotted gray;;
+            font-family: sans-serif;
+            font-size:14px;
+        }
+
+    </style>
+{% endblock %}
+{% block content %}
+    <img src="{{ url_for('static', filename ='dheader.png') }}" height="80" width="760" align="center" >
+    <h3 align="left">bca-webtools</h3>
+    <BR>&nbsp;<BR> 
+    <p class="important">
+      The following partitions were found in this disk image:
+
+      <BR>&nbsp;<BR> 
+        <script>
+        document.write({{ image_name }});
+        </script>
+        <ul>
+          {% for number in range(0, num_partitions) %} 
+            {% set part = number + 1 %}
+            {% set partinfo_html = image_name ~ "/"~part %}
+            <li>Partition #{{ part }} [ {{part_desc[number]}} ] <a href={{ partinfo_html }}>Browse</a> </li>
+          {% endfor %}
+        </ul>
+      {# {% endraw %} #}
+    </p>
+{% endblock %}
