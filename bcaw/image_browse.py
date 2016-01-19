@@ -36,7 +36,7 @@ image_dir = "/vagrant/disk-images"
 num_images = 0
 image_db = []
 
-@app.route("/")
+@app.route("/", methods=['GET'])
 
 def bcawBrowseImages():
     global image_dir
@@ -93,7 +93,7 @@ def bcawGetImageIndex(image, is_path):
 #
 # Template rendering for Image Listing
 #
-@app.route('/image/<image_name>')
+@app.route('/image/<image_name>', methods=['GET'])
 def image(image_name):
     #print("Partitions: Rendering Template with partitions for img: ", image_name)
     num_partitions = bcaw.num_partitions_ofimg[str(image_name)]
@@ -103,10 +103,7 @@ def image(image_name):
         ## print("D: part_disk[i={}]={}".format(i, bcaw.partDictList[image_index][i]))
         part_desc.append(bcaw.partDictList[image_index][i]['desc'])
 
-    return render_template('fl_img_temp_ext.html',
-                            image_name=str(image_name),
-                            num_partitions=num_partitions,
-                            part_desc=part_desc)
+    return jsonify({'partitions' : part_desc})
 
 @app.route('/image/metadata/<image_name>')
 def image_psql(image_name):
