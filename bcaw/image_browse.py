@@ -12,7 +12,7 @@
 # This file contains the main BitCurator Access Webtools application.
 #
 
-from flask import Flask, render_template, url_for, Response, stream_with_context, request
+from flask import Flask, render_template, url_for, Response, stream_with_context, request, jsonify
 import pytsk3
 import os, sys, string, time, re, urllib
 from mimetypes import MimeTypes
@@ -48,7 +48,7 @@ def bcawBrowseImages():
     global image_db
     del image_db [:]
 
-    # Create the DB. FIXME: This needs to be called from runserver.py 
+    # Create the DB. FIXME: This needs to be called from runserver.py
     # before calling run. That seems to have some issues. So calling from
     # here for now. Need to fix it.
     session = bcaw_db.bcawdb()
@@ -64,17 +64,17 @@ def bcawBrowseImages():
             dm.num_partitions = dm.bcawGetPartInfoForImage(image_path, image_index)
             idb = bcaw_db.DimacImages.query.filter_by(image_name=img).first()
             image_db.append(idb)
-            ## print("D: IDB: image_index:{}, image_name:{}, acq_date:{}, md5: {}".format(image_index, idb.image_name, idb.acq_date, idb.md5)) 
+            ## print("D: IDB: image_index:{}, image_name:{}, acq_date:{}, md5: {}".format(image_index, idb.image_name, idb.acq_date, idb.md5))
             image_index +=1
         else:
             continue
-  
+
     # Render the template for main page.
     #print 'D: Image_list: ', image_list
     global num_images
     num_images = len(image_list)
 
-    return render_template('fl_temp_ext.html', image_list=image_list, np=dm.num_partitions, image_db=image_db)
+    return jsonify({'images': image_list})
 
 def bcawGetImageIndex(image, is_path):
     global image_list
@@ -114,7 +114,7 @@ def image_psql(image_name):
 
     image_index =  bcawGetImageIndex(image_name, is_path=False)
 
-    return render_template("db_image_template.html", 
+    return render_template("db_image_template.html",
                            image_name = image_name,
                            image=image_db[image_index])
 
@@ -153,7 +153,7 @@ def stream_template(template_name, **context):
 def file_clicked(image_name, image_partition, path):
     #print("Files: Rendering Template for subdirectory or contents of a file: ",
           #image_name, image_partition, path)
-    
+
     image_index = bcawGetImageIndex(str(image_name), False)
     image_path = image_dir+'/'+image_name
 
@@ -186,7 +186,7 @@ def file_clicked(image_name, image_partition, path):
             break
     else:
         print("D: File_clicked: File {} not found in file_list".format(file_name))
-        #continue            
+        #continue
 
     if item['isdir'] == True:
         # We will send the file_list under this directory to the template.
@@ -211,7 +211,7 @@ def file_clicked(image_name, image_partition, path):
         #print("Downloading File: ", item['name'])
         # It is an ordinary file
         f = fs.open_meta(inode=item['inode'])
-    
+
         # Read data and store it in a string
         offset = 0
         size = f.info.meta.size
@@ -226,9 +226,9 @@ def file_clicked(image_name, image_partition, path):
                 break
 
             offset += len(data)
-            total_data = total_data+data 
+            total_data = total_data+data
             #print "Length OF TOTAL DATA: ", len(total_data)
-           
+
 
         mime = MimeTypes()
         mime_type, a = mime.guess_type(file_name)
