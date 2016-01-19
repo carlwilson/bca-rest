@@ -105,15 +105,13 @@ def image(image_name):
 
     return jsonify({'partitions' : part_desc})
 
-@app.route('/image/metadata/<image_name>')
+@app.route('/image/metadata/<image_name>', methods=['GET'])
 def image_psql(image_name):
     ## print("D: Rendering DB template for image: ", image_name)
 
     image_index =  bcawGetImageIndex(image_name, is_path=False)
-
-    return render_template("db_image_template.html",
-                           image_name = image_name,
-                           image=image_db[image_index])
+    metadata = image_db[image_index]
+    return jsonify({ 'metadata' : metadata.dictSerialise() })
 
 #
 # Template rendering for Directory Listing per partition
