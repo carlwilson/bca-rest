@@ -18,7 +18,7 @@ from flask.ext.sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 db = SQLAlchemy(app)
-#app.config.from_pyfile(config.py) 
+#app.config.from_pyfile(config.py)
 # FIXME: The above line gives error - so added the following 2 lines for now
 #SQLALCHEMY_DATABASE_URI = "postgresql://bcadmin:bcadmin@localhost/DimacImages"
 #db_uri = app.config['SQLALCHEMY_DATABASE_URI']
@@ -49,7 +49,7 @@ def bcawGetXmlInfo(xmlfile):
             ewfinfo = child
             for echild in ewfinfo:
                 if (echild.tag == 'acquiry_information'):
-                    acqinfo = echild 
+                    acqinfo = echild
                     for acq_child in acqinfo:
                         if (acq_child.tag == 'acquisition_date'):
                             dbrec['acq_date'] = acq_child.text
@@ -57,9 +57,9 @@ def bcawGetXmlInfo(xmlfile):
                             dbrec['sys_date'] = acq_child.text
                         elif (acq_child.tag == 'acquisition_system'):
                             dbrec['os'] = acq_child.text
-            
+
                 elif (echild.tag == 'ewf_information'):
-                    ewf_info = echild 
+                    ewf_info = echild
                     for ewfi_child in ewf_info:
                         if (ewfi_child.tag == 'file_format'):
                             dbrec['file_format'] = ewfi_child.text
@@ -77,8 +77,8 @@ def bcawGetXmlInfo(xmlfile):
                 elif (echild.tag == 'hashdigest'):
                     hash_type = echild.text  ## FIXME
                     #print("HASH TYPE: ", hash_type)
-                    dbrec['md5'] = hash_type 
- 
+                    dbrec['md5'] = hash_type
+
     return dbrec
 
 def dbBrowseImages():
@@ -95,7 +95,7 @@ def dbBrowseImages():
             global image_list
             image_list.append(img)
 
-            # FIXME: Partition info will be added to the metadata info 
+            # FIXME: Partition info will be added to the metadata info
             # Till then the following three lines are not necessary.
             dm = bcaw_utils.bcaw()
             image_path = image_dir+'/'+img
@@ -120,7 +120,7 @@ def dbBrowseImages():
         else:
             continue
     db.session.commit()
-  
+
     #print 'D: Image_list: ', image_list
 
 class DimacImages(db.Model):
@@ -141,7 +141,7 @@ class DimacImages(db.Model):
     md5 = db.Column(db.String(100))
 
     def __init__(self, image_name = None, acq_date = None, sys_date = None,
-os = None, file_format = None, media_type = None, is_physical = None, 
+os = None, file_format = None, media_type = None, is_physical = None,
 bps = None, media_size = None, md5 = None):
         self.image_name = image_name
         self.acq_date = acq_date
@@ -154,8 +154,22 @@ bps = None, media_size = None, md5 = None):
         self.media_size = media_size
         self.md5 = md5
 
+    def dictSerialise(self):
+        return {
+            'name': self.image_name,
+            'acq_date': self.acq_date,
+            'sys_date': self.sys_date,
+            'os': self.os,
+            'format': self.file_format,
+            'media_type': self.media_type,
+            'is_physical': self.is_physical,
+            'bps': self.bps,
+            'media_size': self.media_size,
+            'md5': self.md5
+        }
+
 def bcawDbSessionAdd(dbrec):
-   db.session.add(DimacImages(image_name=dbrec['image_name'], 
+   db.session.add(DimacImages(image_name=dbrec['image_name'],
                          acq_date=dbrec['acq_date'],
                          sys_date=dbrec['sys_date'],
                          os=dbrec['os'], file_format=dbrec['file_format'],
@@ -163,9 +177,9 @@ def bcawDbSessionAdd(dbrec):
                          is_physical=dbrec['is_physical'],
                          bps = dbrec['bps'],
                          media_size = dbrec['media_size'],
-                         md5 = dbrec['md5'])) 
-    
-def dbinit(): 
+                         md5 = dbrec['md5']))
+
+def dbinit():
    #print(">>> Creating tables ")
    db.drop_all()
    db.create_all()
@@ -192,4 +206,3 @@ if __name__=="__main__":
     dbinit()
     dbBrowseImages()
     app.run(debug=True, host="0.0.0.0", port=8888)
-    
