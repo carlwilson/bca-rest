@@ -12,7 +12,8 @@
 # This file contains the main BitCurator Access Webtools application.
 #
 
-from flask import Flask, render_template, url_for, Response, stream_with_context, request, jsonify
+from flask import Flask, request, jsonify
+from flask_restful import Resource, Api
 import pytsk3
 import os, sys, string, time, re, urllib
 from mimetypes import MimeTypes
@@ -20,13 +21,13 @@ from datetime import date
 from bcaw_utils import bcaw
 
 from bcaw import app
+from bcaw import api
 import bcaw_db
 from sqlalchemy import *
 '''
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relation, sessionmaker
 '''
-
 
 image_list = []
 file_list_root = []
@@ -36,9 +37,29 @@ image_dir = "/vagrant/disk-images"
 num_images = 0
 image_db = []
 
-@app.route("/", methods=['GET'])
+class DiskImageBrowser(Resource):
+    def get(self):
+        return {'images': listImages()}
 
-def bcawBrowseImages():
+class PartitionBrowser(Resource):
+    def get(self, image_name):
+        return {'partitions': listPartitions(image_name)}
+
+class ImageMetadata(Resource):
+    def get(self, image_name):
+        return {'metadata': imageMetadata(image_name)}
+
+class DirectoryListing(Resource):
+    def get(self, image_name, partition):
+        return {'directory': rootDirectoryListing(image_name, partition)}
+
+
+api.add_resource(DiskImageBrowser, '/')
+api.add_resource(PartitionBrowser, '/image/<image_name>')
+api.add_resource(ImageMetadata, '/image/metadata/<image_name>')
+api.add_resource(DirectoryListing, '/image/<image_name>/<partition>')
+
+def listImages():
     global image_dir
     image_index = 0
 
@@ -74,7 +95,7 @@ def bcawBrowseImages():
     global num_images
     num_images = len(image_list)
 
-    return jsonify({'images': image_list})
+    return image_list
 
 def bcawGetImageIndex(image, is_path):
     global image_list
@@ -93,8 +114,7 @@ def bcawGetImageIndex(image, is_path):
 #
 # Template rendering for Image Listing
 #
-@app.route('/image/<image_name>', methods=['GET'])
-def image(image_name):
+def listPartitions(image_name):
     #print("Partitions: Rendering Template with partitions for img: ", image_name)
     num_partitions = bcaw.num_partitions_ofimg[str(image_name)]
     part_desc = []
@@ -103,21 +123,19 @@ def image(image_name):
         ## print("D: part_disk[i={}]={}".format(i, bcaw.partDictList[image_index][i]))
         part_desc.append(bcaw.partDictList[image_index][i]['desc'])
 
-    return jsonify({'partitions' : part_desc})
+    return part_desc
 
-@app.route('/image/metadata/<image_name>', methods=['GET'])
-def image_psql(image_name):
+def imageMetadata(image_name):
     ## print("D: Rendering DB template for image: ", image_name)
 
     image_index =  bcawGetImageIndex(image_name, is_path=False)
     metadata = image_db[image_index]
-    return jsonify({ 'metadata' : metadata.dictSerialise() })
+    return metadata.dictSerialise()
 
 #
 # Template rendering for Directory Listing per partition
 #
-@app.route('/image/<image_name>/<image_partition>')
-def root_directory_list(image_name, image_partition):
+def rootDirectoryListing(image_name, image_partition):
     #print("Files: Rendering Template with files for partition: ",
                             #image_name, image_partition)
     image_index = bcawGetImageIndex(str(image_name), False)
@@ -125,10 +143,7 @@ def root_directory_list(image_name, image_partition):
     image_path = image_dir+'/'+image_name
     file_list_root, fs = dm.bcawGenFileList(image_path, image_index,
                                              int(image_partition), '/')
-    return render_template('fl_part_temp_ext.html',
-                           image_name=str(image_name),
-                           partition_num=image_partition,
-                           file_list=file_list_root)
+    return file_list_root
 
 # FIXME: Retained for possible later use
 def stream_template(template_name, **context):
